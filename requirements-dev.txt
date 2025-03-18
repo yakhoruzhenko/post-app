@@ -1,0 +1,10 @@
+-r requirements.txt
+
+bandit==1.8.3
+flake8==7.1.2
+isort==6.0.0
+mypy==1.15.0
+sqlalchemy[mypy]==2.0.38
+types-python-jose==3.4.0.20250224
+yamllint==1.35.1
+types-cachetools==5.5.0.20240820

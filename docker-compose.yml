@@ -1,0 +1,68 @@
+---
+services:
+  post-app-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: post-app-base
+    command: ["echo", "I only exist to be extended so I'll just exit, thanks"]
+
+  post-app:
+    extends: post-app-base
+    container_name: post-app
+    volumes:
+      - /entrypoint.sh
+      - ${PWD}/app:/app/app
+      - ${PWD}/alembic:/app/alembic
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # App config
+      APP_VERSION: "0.1.0"
+      ENVIRONMENT: "dev"
+      MAX_POST_LENGTH: "1_048_576"
+      MAX_CACHE_SIZE: "1024"
+      CACHE_TTL: "300"
+      # Security
+      SECRET_KEY: "fcb83a311c0ab22310e16417b84de96d496c5f80906b4e14c00b15de44f56a8c"
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440 # 24 hours
+      HASHING_ALGOTRITHM: "HS256"
+      # DB connectivity
+      DB_HOST: "mysql"
+      DB_PORT: 3306
+      DB_NAME: "post_app"
+      DB_USER: "post"
+      DB_PASSWORD: "password"
+    entrypoint: ["/app/entrypoint.sh"]
+    command:
+      [
+        "uvicorn",
+        "--reload",
+        "--workers",
+        "1",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "app.main:app",
+      ]
+    ports:
+      - 8000:8000
+
+  mysql:
+    container_name: mysql
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: "post_app"
+      MYSQL_USER: "post"
+      MYSQL_PASSWORD: "password"
+      MYSQL_ROOT_PASSWORD: "root_password"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+      timeout: 3s
+    ports:
+      - 5788:3306
